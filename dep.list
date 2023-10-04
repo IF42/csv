@@ -1,2 +1,2 @@
-csv.o: src/csv.c src/include/csv.h
-test.o: test/test.c test/../src/include/csv.h
+.cache/test.o: test/test.c test/../src/csv.h
+.cache/csv.o: src/csv.c src/csv.h

@@ -1,63 +1,61 @@
-CC=gcc
-CFLAGS=-Wall -Wextra -pedantic -std=c18 -O2 
-LIBS=-lnumc
+CC = gcc
+CFLAGS = -Wall -Wextra -pedantic -Ofast
+LIBS = -lthrow 
 
 
-INCLUDE_PATH=/usr/include
-LIB_PATH=/usr/lib64
+TARGET = libcsv.a
+CACHE = .cache
+OUTPUT = $(CACHE)/release
 
-TARGET=libcsv.a
-OUTPUT=release
 
+INCLUDE_PATH = /usr/include
+LIB_PATH = /usr/lib64
 
 MODULES += csv.o
 
-
 TEST += test.o
-TEST += csv.o
 
 
-all: env $(MODULES)
-	ar -crs $(OUTPUT)/$(TARGET) $(MODULES)
+OBJ=$(addprefix $(CACHE)/,$(MODULES))
+T_OBJ=$(addprefix $(CACHE)/,$(TEST))
+
+
+all: env $(OBJ)
+	ar -crs $(OUTPUT)/$(TARGET) $(OBJ)
 
 
 %.o:
-	$(CC) $(CFLAGS) -c $<
+	$(CC) $(CFLAGS) -c $< -o $@
 
 
 -include dep.list
 
 
-exec: all
-	$(OUTPUT)/$(TARGET)
+exec: env $(OBJ) $(T_OBJ)
+	$(CC) $(CFLAGS) $(OBJ) $(T_OBJ) $(LIBS) -o $(OUTPUT)/test	
+	$(OUTPUT)/test
 
 
 .PHONY: env dep clean install
 
 
-test: env $(TEST)
-	$(CC) $(CFLAGS) $(TEST) $(LIBS) -o $(OUTPUT)/test
+dep:
+	$(CC) -MM  test/*.c src/*.c  | sed 's|[a-zA-Z0-9_-]*\.o|$(CACHE)/&|' > dep.list
 
-	$(OUTPUT)/test
+
+env:
+	mkdir -pv $(CACHE)
+	mkdir -pv $(OUTPUT)
 
 
 install:
 	cp -v $(OUTPUT)/$(TARGET) $(LIB_PATH)/$(TARGET)
-	mkdir -p $(INCLUDE_PATH)/numc/
-	cp -v src/include/*.h $(INCLUDE_PATH)/numc/
-
-
-dep:
-	$(CC) -MM src/*.c test/*.c > dep.list
-
-
-env:
-	mkdir -pv $(OUTPUT)
+	cp -v src/csv.h $(INCLUDE_PATH)/csv.h
 
 
 clean: 
-	rm -rvf $(OUTPUT)
-	rm -vf ./*.o
+	rm -rvf $(CACHE)
+
 
 
 

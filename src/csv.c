@@ -1,78 +1,126 @@
-/**
-** @file csv.c
-*/ 
+#include "csv.h"
 
-#include "include/csv.h"
-
+#include <string.h>
 #include <stdlib.h>
 
-typedef struct
+
+struct CSV_Reader
 {
-    char peek;
-    char c;
-    char separator;
+	CSV_Cell cell;
+
+	char separator;
+
     size_t index;
     size_t length;
-    char * csv_string;
-}CsvParser;
+
+    char array[];
+};
 
 
-O_CSV 
-csv_read(
-    char * path
-    , char separator)
+CSV_Reader *
+csv_reader_string_new(
+	char * string
+	, char separator)
 {
-    (void) path;
-    (void) separator;
+	size_t memsize = strlen(string);
 
-    return (O_CSV) {.is_value = false};
+	CSV_Reader * self = malloc(sizeof(CSV_Reader) + memsize);
+
+	if(self != NULL)
+	{
+		*self = (CSV_Reader)
+		{
+			.length      = memsize
+			, .separator = separator
+			, .index     = 0
+		};
+
+		memcpy(self->array, string, memsize);
+	}
+
+    return self;
 }
 
 
-char *
-parser_next(CsvParser * self)
+CSV_Reader *
+csv_reader_FILE_new(
+	FILE * f
+	, char separator)
 {
-    return NULL;
+    fseek(f, 0L, SEEK_END);
+    size_t memsize = ftell(f);
+    fseek(f, 0L, SEEK_SET);
+
+    CSV_Reader * self = malloc(sizeof(CSV_Reader) + (memsize + 1));
+
+	if(self != NULL)
+	{
+		*self = (CSV_Reader)
+		{
+			.length      = memsize
+			, .separator = separator
+			, .index     = 0
+		};
+
+		fread(self->array, memsize, sizeof(char), f);
+	}
+	
+	return self;
 }
 
 
-O_CSV
-csv_parse(
-    char * csv_string
-    , size_t length
-    , char separator)
+bool
+csv_reader_row(CSV_Reader * self)
 {
-    Tensor * csv_tensor = 
-        tensor_new(1, (uint32_t[]){1}, sizeof(char*));
+	if(self->array[self->index] == '\n')
+	{
+		self->index++;
+		return true;
+	}
 
-    CsvParser parser = 
-        {
-            .peek = csv_string[1]
-            , .c = csv_string[0]
-            , .index = 0
-            , .length = length
-            , .separator = separator
-            , .csv_string = csv_string
-        };
-
-    char * next_ceel = NULL;
-
-    while((next_ceel = parser_next(&parser)) != NULL)
-    {
-
-    }
-
-    return (O_CSV) {.is_value = false};
+	return false;
 }
+
+
+CSV_Cell * 
+csv_reader_cell(CSV_Reader * self)
+{
+	while(self->array[self->index] != '\0' 
+		&& self->array[self->index] != '\n')
+	{
+		if(self->array[self->index] == self->separator)
+		{
+			self->index++;
+			continue;
+		}
+		else
+		{
+			self->cell.length = self->index;
+			self->cell.value  = &self->array[self->index];
+
+			while(self->array[self->index] != self->separator 
+                    && self->array[self->index] != '\n' 
+					&& self->array[self->index] != '\0')
+			{
+				self->index++;
+			}
+
+			self->cell.length = self->index - self->cell.length;
+
+			return &self->cell;
+		}
+	}
+
+	return NULL;
+}
+
 
 
 void
-csv_delete(CSV * self)
+csv_reader_delete(CSV_Reader * self)
 {
-    for(size_t i = 0; i < tensor_size(&self->tensor); i++)
-        free(self->tensor.vector);
-
-    tensor_delete(&self->tensor);
+	if(self != NULL)
+		free(self);
 }
 
 
