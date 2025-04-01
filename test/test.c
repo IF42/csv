@@ -2,40 +2,44 @@
 #include <stdlib.h>
 #include <signal.h>
 #include <stdarg.h>
-#include <throw.h>
+#include <assert.h>
 
-#include "../src/csv.h"
-
-
-#define IRIS_FILE "Iris.csv"
+#include <alloc/arena.h>
+#include "csv/csv.h"
 
 
-int
-main(void)
-{
+#define IRIS_FILE "assets/Iris.csv"
+
+
+int main(void) {
+    ArenaAlloc alloc = arena_alloc(1024*30);
+
 	FILE * f = fopen(IRIS_FILE, "r");
+	assert(f != NULL);
 
-	if(f == NULL)
-		throw("Can't open file '%s' for readig.\n", IRIS_FILE);
+    fseek(f, 0L, SEEK_END);
+    size_t length = ftell(f);
+    fseek(f, 0L, SEEK_SET);
 
-	CSV_Reader * reader = csv_reader_new(f, ',');
-	
-	if(reader == NULL)
-		throw("CSV_Reader initialization error.\n");
-
-	do
-	{
-		CSV_Cell * cell;
-
-		while((cell = csv_reader_cell(reader)) != NULL)
-			printf("%.*s ", cell->length, cell->value);
-
-		printf("\n");
-	}
-	while(csv_reader_row(reader) == true);
-
+    char * csv_string = new(ALLOC(&alloc), length + 1);
+    fread(csv_string, sizeof(char), length, f);
 	fclose(f);
 
+    CSV iris_csv = csv_deserialize(csv_string, ',', ALLOC(&alloc));
+    
+    /*
+    csv_show(&iris_csv, ',', stdout);
+    */
+    
+    iterate(csv_to_iterator(&iris_csv), CSV_Record*, record, {
+        if(iterator.index > csv_columns(&iris_csv)) {
+            if((iterator.index % csv_columns(&iris_csv)) == 5) {
+                printf("%.*s\n", (int) record->length, record->c_str);
+            }
+        }
+    });
+
+    finalize(ALLOC(&alloc));
     printf("Program exit..\n");
     return EXIT_SUCCESS;
 }
