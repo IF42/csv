@@ -33,7 +33,7 @@ int main(void) {
     
     iterate(csv_to_iterator(&iris_csv), CSV_Record*, record, {
         if(iterator.index > csv_columns(&iris_csv)) {
-            if((iterator.index % csv_columns(&iris_csv)) == 5) {
+            if((iterator.index % csv_columns(&iris_csv)) == 1) {
                 printf("%.*s\n", (int) record->length, record->c_str);
             }
         }

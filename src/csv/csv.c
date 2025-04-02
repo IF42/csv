@@ -167,15 +167,6 @@ CSV csv_deserialize(char * csv_string, char delimiter, Alloc * alloc) {
 }
 
 
-static void * csv_iterator_next(Iterator * it) {
-    if(it->index < ((CSV*) it->context)->size) {
-        return &((CSV*) it->context)->record[it->index];
-    } else {
-        return NULL;
-    }
-}
-
-
 size_t csv_rows(CSV * self) {
     return self->row;
 }
@@ -186,10 +177,25 @@ size_t csv_columns(CSV * self) {
 }
 
 
+static void * csv_iterator_next(Iterator * it) {
+    if(it->index < ((CSV*) it->context)->size) {
+        return &((CSV*) it->context)->record[it->index];
+    } else {
+        return NULL;
+    }
+}
+
+
+static void csv_iterator_reset(Iterator * it) {
+    it->index = 0;
+}
+
+
 Iterator csv_to_iterator(CSV * csv) {
     return (Iterator) {
         .context = csv
-        , .next = csv_iterator_next
+        , .__reset__ = csv_iterator_reset
+        , .__next__ = csv_iterator_next
     };
 }
 
