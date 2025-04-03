@@ -1,4 +1,4 @@
 
 FIND=/usr/bin/find
-INDIR = /usr/include/json
+INDIR = /usr/include/csv
 LIBDIR = /usr/lib

@@ -85,6 +85,10 @@ CSV_Token csv_lexer_next(CSV_Lexer * self) {
             self->index ++;
         }
         token.length = self->index - token.length;
+        if(self->c_str[self->index] == '"') {
+            self->index ++;
+        }
+
         return token;
     } else if(isdigit((int) self->c_str[self->index]) 
             || ((self->c_str[self->index] == '+' 
@@ -94,7 +98,11 @@ CSV_Token csv_lexer_next(CSV_Lexer * self) {
         CSV_Token token = {.type = CSV_TokenType_Number, .length = self->index, .c_str = &self->c_str[self->index]};
 
         while(is_delimiter(self) == false) {
-            if(isalpha((int) self->c_str[self->index])) {
+            if(isdigit((int) self->c_str[self->index]) == 0 
+                    && self->c_str[self->index] != '+' 
+                    && self->c_str[self->index] != '-' 
+                    && self->c_str[self->index] != '.' 
+                    && self->c_str[self->index] != 'e') { 
                 token.type = CSV_TokenType_String;
             } 
             self->index++;
@@ -127,7 +135,7 @@ CSV csv(Alloc * alloc) {
 static void csv_append(CSV * self, CSV_Record record) {
     if(self->size >= self->capacity) {
         self->capacity = (self->capacity + 1) * 2;
-        self->record = resize(self->alloc, self->record, self->capacity);
+        self->record = resize(self->alloc, self->record, sizeof(CSV_Record) * self->capacity);
     }
 
     self->record[self->size++] = record;
@@ -178,8 +186,9 @@ size_t csv_columns(CSV * self) {
 
 
 static void * csv_iterator_next(Iterator * it) {
-    if(it->index < ((CSV*) it->context)->size) {
-        return &((CSV*) it->context)->record[it->index];
+    CSV * csv_context = it->context;
+    if(it->index < csv_context->size) {
+        return &csv_context->record[it->index];
     } else {
         return NULL;
     }

@@ -8,11 +8,11 @@
 #include "csv/csv.h"
 
 
-#define IRIS_FILE "assets/Iris.csv"
+#define IRIS_FILE "assets/ats.csv"
 
 
 int main(void) {
-    ArenaAlloc alloc = arena_alloc(1024*30);
+    ArenaAlloc alloc = arena_alloc(1024*50);
 
 	FILE * f = fopen(IRIS_FILE, "r");
 	assert(f != NULL);
@@ -25,20 +25,18 @@ int main(void) {
     fread(csv_string, sizeof(char), length, f);
 	fclose(f);
 
-    CSV iris_csv = csv_deserialize(csv_string, ',', ALLOC(&alloc));
+    CSV batch_csv = csv_deserialize(csv_string, ',', ALLOC(&alloc));
     
-    /*
-    csv_show(&iris_csv, ',', stdout);
-    */
     
-    iterate(csv_to_iterator(&iris_csv), CSV_Record*, record, {
-        if(iterator.index > csv_columns(&iris_csv)) {
-            if((iterator.index % csv_columns(&iris_csv)) == 1) {
-                printf("%.*s\n", (int) record->length, record->c_str);
-            }
+    //csv_show(&iris_csv, ',', stdout);
+    size_t columns = csv_columns(&batch_csv);
+
+    iterate(csv_to_iterator(&batch_csv), CSV_Record*, record, {
+        if(iterator.index > 800 && (iterator.index % columns) == 1) {
+            printf("%s %.*s %f\n", CSV_TYPE(record->type), (int) record->length, record->c_str, strtod(record->c_str, NULL));
         }
     });
-
+   
     finalize(ALLOC(&alloc));
     printf("Program exit..\n");
     return EXIT_SUCCESS;
